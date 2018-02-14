@@ -20,11 +20,12 @@ DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]])  # RGB order
 class PSPNet(object):
     """Pyramid Scene Parsing Network by Hengshuang Zhao et al 2017"""
 
-    def __init__(self, nb_classes, resnet_layers, input_shape, weights):
+    def __init__(self, nb_classes, resnet_layers, input_shape, weights_name, weights_path='.'):
         self.input_shape = input_shape
-        json_path = join("weights", "keras", weights + ".json")
-        h5_path = join("weights", "keras", weights + ".h5")
-        if 'pspnet' in weights:
+        json_path = join(weights_path, "weights", "keras", weights_name + ".json")
+        h5_path = join(weights_path, "weights", "keras", weights_name + ".h5")
+        print(h5_path)
+        if 'pspnet' in weights_name:
             if os.path.isfile(json_path) and os.path.isfile(h5_path):
                 print("Keras model & weights found, loading...")
                 with CustomObjectScope({'Interp': layers.Interp}):
@@ -36,10 +37,10 @@ class PSPNet(object):
                 self.model = layers.build_pspnet(nb_classes=nb_classes,
                                                  resnet_layers=resnet_layers,
                                                  input_shape=self.input_shape)
-                self.set_npy_weights(weights)
+                self.set_npy_weights(weights_name)
         else:
             print('Load pre-trained weights')
-            self.model = load_model(weights)
+            self.model = load_model(weights_name)
 
     def predict(self, img, flip_evaluation=False):
         """
@@ -128,15 +129,15 @@ class PSPNet50(PSPNet):
 
     def __init__(self, nb_classes, weights, input_shape):
         PSPNet.__init__(self, nb_classes=nb_classes, resnet_layers=50,
-                        input_shape=input_shape, weights=weights)
+                        input_shape=input_shape, weights_name=weights)
 
 
 class PSPNet101(PSPNet):
     """Build a PSPNet based on a 101-Layer ResNet."""
 
-    def __init__(self, nb_classes, weights, input_shape):
+    def __init__(self, nb_classes, weights_name, input_shape, weights_path='.'):
         PSPNet.__init__(self, nb_classes=nb_classes, resnet_layers=101,
-                        input_shape=input_shape, weights=weights)
+                        input_shape=input_shape, weights_name=weights_name, weights_path=weights_path)
 
 
 if __name__ == "__main__":
@@ -170,20 +171,20 @@ if __name__ == "__main__":
         if not args.weights:
             if "pspnet50" in args.model:
                 pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473),
-                                  weights=args.model)
+                                  weights_name=args.model)
             elif "pspnet101" in args.model:
                 if "cityscapes" in args.model:
                     pspnet = PSPNet101(nb_classes=19, input_shape=(713, 713),
-                                       weights=args.model)
+                                       weights_name=args.model)
                 if "voc2012" in args.model:
                     pspnet = PSPNet101(nb_classes=21, input_shape=(473, 473),
-                                       weights=args.model)
+                                       weights_name=args.model)
 
             else:
                 print("Network architecture not implemented.")
         else:
             pspnet = PSPNet50(nb_classes=2, input_shape=(
-                768, 480), weights=args.weights)
+                768, 480), weights_name=args.weights)
 
         probs = pspnet.predict(img, args.flip)
 
